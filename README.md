@@ -1,7 +1,5 @@
 @module jquery-pullList
 
-版本：1.0
-
 为支持分页的列表添加下拉刷新和上拉加载功能。
 
 假设后端支持分页，取某列表接口的原型如下：
@@ -19,7 +17,7 @@
 
 下面举例说明用法，详细可参考 exmaple/index.html 中的例子。
 
-## 示例
+## 下拉列表示例
 
 例：页面元素如下：
 
@@ -86,7 +84,7 @@
 	};
 	$(".bd").pullList(pullListOpt);
 
-## 使用autoload示例
+## autoload事件示例（自动上拉加载）
 
 @key example-autoload
 
@@ -98,3 +96,31 @@ autoload事件可用于滚动到底自动加载，不支持下拉刷新。接上
 	});
 
 一般用于简易分页加载场景。
+
+## 定制提示信息
+
+可设置CSS类mui-pullPrompt来定制提示信息的显示格式，如
+
+	.mui-pullPrompt {
+		background-color: yellow;
+	}
+
+可设置CSS类mui-pullHint来指定hint显示的位置，默认是在容器的顶部。
+
+	<div>
+		<div class="bd"> <!-- pullList容器 -->
+			<p class="mui-pullHint">hello</p>  <!-- 如果未指定mui-pullHint，默认提示信息是显示容器顶部，即这行之上; 指定后，提示信息显示在该对象后面 -->
+			<div class="p-list"></div>
+		</div>
+	</div>
+
+可设置选项prefix来修改这些类名，如
+
+	$.fn.pullList.defaults.prefix = "jd";
+
+则CSS类名变为：`jd-pullPrompt`, `jd-pullHint`.
+
+如果要修改提示信息，可提供回调函数 onHintText;
+如果要定制动画效果，可提供回调函数 onHint.
+
+@see $.fn.pullList

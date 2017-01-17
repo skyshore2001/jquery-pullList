@@ -1,0 +1,195 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>jquery-pullList</title>
+<style>
+h3,h4,h5,h6 {
+	font-size: 1em;
+}
+
+pre {
+	border-left: 1px solid #ccc;
+	margin: 0 1em;
+	padding: 0 0.5em;
+	tab-size:4;
+}
+
+code {
+	font-family: "Courier New";
+    padding: 0px 3px;
+    display: inline-block;
+}
+
+.toc {
+	margin: 2em;
+}
+
+.toc p {
+	margin: 0.3em 0;
+}
+
+</style>
+<link rel="stylesheet" href="style.css" />
+</head>
+
+<h1>jquery-pullList</h1>
+<div>最后更新：2017-01-17</div>
+<h2>Modules</h2>
+<div class="toc">
+<p><a href="#jquery-pullList">jquery-pullList (module)</a></p>
+</div><hr>
+<h2>Keywords</h2>
+<div class="toc">
+<p><a href="#$.fn.pullList">$.fn.pullList (fn)</a></p>
+<p><a href="#$.fn.pullList">$.fn.pullList (fn)</a></p>
+<p><a href="#$.fn.pullList.defaults">$.fn.pullList.defaults (var)</a></p>
+<p><a href="#autoload">autoload (event)</a></p>
+<p><a href="#example-autoload">example-autoload (key)</a></p>
+<p><a href="#initPullList">initPullList (fn)</a></p>
+<p><a href="#jquery-pullList">jquery-pullList (module)</a></p>
+<p><a href="#jquery-pullList.version">jquery-pullList.version (fn)</a></p>
+</div><hr>
+<h2 id="jquery-pullList">@module jquery-pullList</h2><div class="toc"><p style="margin-left:0em"><a href="#jquery-pullList-1 下拉列表示例">1 下拉列表示例</a></p>
+<p style="margin-left:0em"><a href="#jquery-pullList-2 autoload事件示例（自动上拉加载）">2 autoload事件示例（自动上拉加载）</a></p>
+<p style="margin-left:0em"><a href="#jquery-pullList-3 定制提示信息">3 定制提示信息</a></p>
+</div>
+<p>为支持分页的列表添加下拉刷新和上拉加载功能。</p>
+<p>假设后端支持分页，取某列表接口的原型如下：</p>
+<pre><code>getOrderList(pagekey?=1, pagesz?=20) =&gt; { nextkey?, @list={id, name} }</code></pre>
+<p>每次返回一页数据，用nextkey属性表示取下一页时请求中的pagekey参数，如果是最后一页，则没有nextkey属性。<br />
+请求示例：</p>
+<pre><code>GET http://server/app/getOrderList?pagekey=1&amp;pagesz=20</code></pre>
+<p>返回示例：</p>
+<pre><code>{ nextkey: 2, list=[ {id:1, name: "item 1"} ,...] }</code></pre>
+<p>下面举例说明用法，详细可参考 exmaple/index.html 中的例子。</p>
+<h4 id="jquery-pullList-1 下拉列表示例">1 下拉列表示例</h4>
+<p>例：页面元素如下：</p>
+<pre><code>&lt;style&gt;
+.bd {
+    overflow-y: auto;
+    height: 400px;
+}
+&lt;/style&gt;
+&lt;div&gt;
+    &lt;div class="bd"&gt;
+        &lt;div class="p-list"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p>其中，类p-list作为列表，类bd作为容器，设置了确定的高度（实际项目中一般用js设置高度），从而在超出时可显示滚动条。</p>
+<p>设置支持分页的下拉列表的示例代码如下：</p>
+<pre><code>var pullListOpt = {
+    onLoadItem: showOrderList,
+    //autoLoadMore: false
+};
+$(".bd").pullList(pullListOpt);
+
+function showOrderList(isRefresh)
+{
+    var jlst = $(".p-list");
+    var param = {pagesz: 20};
+    if (isRefresh) {
+        // 刷新列表
+        jlst.empty();
+        param.pagekey = 1;
+    }
+    else {
+        // 加载下一页
+        var pagekey = jlst.data("nextkey");
+        // 已是最后一页，不再加载更多
+        if (pagekey == null)
+            return;
+        param.pagekey = pagekey;
+    }
+
+    callSvr("getOrderList", param, function (data) {
+        // create items and append to jlst
+        $.each(data.list, function () {
+            $("&lt;li&gt;" + this.name + "&lt;/li&gt;").appendTo(jlst);
+        });
+
+        // 处理下一页参数
+        if (data.nextkey)
+            jlst.data("nextkey", data.nextkey);
+        else
+            jlst.removeData("nextkey");
+    });
+}
+showOrderList(true);</code></pre>
+<p>运行示例，下拉可刷新，上拉滚动到底可自动加载。如果想手动加载可设置选项<code>autoLoadMore = false</code>:</p>
+<pre><code>var pullListOpt = {
+    onLoadItem: showOrderList,
+    autoLoadMore: false
+};
+$(".bd").pullList(pullListOpt);</code></pre>
+<h4 id="jquery-pullList-2 autoload事件示例（自动上拉加载）">2 autoload事件示例（自动上拉加载）</h4>
+<p class="key"><strong>@key <a id="example-autoload">example-autoload</a></strong> </p>
+<p>autoload事件可用于滚动到底自动加载，不支持下拉刷新。接上例，我们不用pullList方法，直接设置事件即可：</p>
+<pre><code>// $(".bd").pullList(pullListOpt);
+$(".bd").on("autoload", function (ev) {
+    showOrderList();
+});</code></pre>
+<p>一般用于简易分页加载场景。</p>
+<h4 id="jquery-pullList-3 定制提示信息">3 定制提示信息</h4>
+<p>可设置CSS类mui-pullPrompt来定制提示信息的显示格式，如</p>
+<pre><code>.mui-pullPrompt {
+    background-color: yellow;
+}</code></pre>
+<p>可设置CSS类mui-pullHint来指定hint显示的位置，默认是在容器的顶部。</p>
+<pre><code>&lt;div&gt;
+    &lt;div class="bd"&gt; &lt;!-- pullList容器 --&gt;
+        &lt;p class="mui-pullHint"&gt;hello&lt;/p&gt;  &lt;!-- 如果未指定mui-pullHint，默认提示信息是显示容器顶部，即这行之上; 指定后，提示信息显示在该对象后面 --&gt;
+        &lt;div class="p-list"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p>可设置选项prefix来修改这些类名，如</p>
+<pre><code>$.fn.pullList.defaults.prefix = "jd";</code></pre>
+<p>则CSS类名变为：<code>jd-pullPrompt</code>, <code>jd-pullHint</code>.</p>
+<p>如果要修改提示信息，可提供回调函数 onHintText;<br />
+如果要定制动画效果，可提供回调函数 onHint.</p>
+<p class="see"><strong>@see <a href="#$.fn.pullList">$.fn.pullList</a></strong> </p><hr>
+<h2 id="jquery-pullList.version">@fn jquery-pullList.version()</h2>
+<p>取版本号:</p>
+<pre><code>var ver = jo.pullList("version");</code></pre><hr>
+<h2 id="autoload">@event autoload</h2>
+<p>滚动到底部时，触发自动加载事件。</p>
+<p class="see"><strong>@see <a href="#example-autoload">example-autoload</a></strong> </p><hr>
+<h2 id="$.fn.pullList">@fn $.fn.pullList(opt?)</h2>
+<p class="fn"><strong>@fn <a id="$.fn.pullList">$.fn.pullList</a></strong> (method, param1, ...)</p>
+<p>初始化pullList，或调用pullList的方法。</p>
+<p class="param"><strong>@param opt</strong>  可选项，详细见下文。</p>
+<p class="param"><strong>@param opt.onLoadItem</strong>  function(isRefresh)</p>
+<p>在合适的时机，它调用 onLoadItem(true) 来刷新列表，调用 onLoadItem(false) 来加载列表的下一页。<br />
+在该回调中this为container对象（即容器）。实现该函数时应当自行管理当前的页号(pagekey)</p>
+<p class="param"><strong>@param opt.autoLoadMore</strong> ?=true 当滑动到页面下方时（距离底部$.fn.pullList.defaults.TRIGGER_AUTOLOAD=30px以内）自动加载更多项目。</p>
+<p class="param"><strong>@param opt.threshold</strong> ?=180 像素值。</p>
+<p>手指最少下划或上划这些像素后才会触发实际加载动作。</p>
+<p class="param"><strong>@param opt.TRIGGER_AUTOLOAD</strong> ?=30 距离滚动到底的像素值，进入此范围触发自动加载。</p>
+<p class="param"><strong>@param opt.prefix</strong> ?="mui"  类名前缀</p>
+<p>影响以下名称：</p>
+<ul>
+<li>CSS类<code>mui-pullPrompt</code> 下拉刷新/上拉加载提示块</li>
+<li>CSS类<code>mui-pullHint</code> 指定下拉提示显示位置</li>
+</ul>
+<p class="param"><strong>@param opt.onHint</strong>  function(ac, dy, threshold)</p>
+<pre><code>ac  动作。"D"表示下拉(down), "U"表示上拉(up), 为null时应清除提示效果.
+dy,threshold  用户移动偏移及临界值。dy&gt;threshold时，认为触发加载动作。</code></pre>
+<p>提供提示用户刷新或加载的动画效果. 缺省实现是下拉或上拉时显示提示信息。</p>
+<p class="param"><strong>@param opt.onHintText</strong>  function(ac, uptoThreshold)</p>
+<p>修改用户下拉/上拉时的提示信息。仅当未设置onHint时有效。onHint会生成默认提示，如果onHintText返回非空，则以返回内容替代默认内容。<br />
+内容可以是一个html字符串，所以可以加各种格式。</p>
+<pre><code>ac:: String. 当前动作，"D"或"U".
+uptoThreshold:: Boolean. 是否达到阈值</code></pre>
+<p class="param"><strong>@param opt.onPull</strong>  function(ev)</p>
+<p>如果返回false，则取消上拉加载或下拉刷新行为，采用系统默认行为。</p>
+<p class="see"><strong>@see <a href="#jquery-pullList">jquery-pullList</a></strong> </p><hr>
+<h2 id="$.fn.pullList.defaults">@var $.fn.pullList.defaults</h2>
+<p>为pullList设置缺省选项，如：</p>
+<pre><code>$.fn.pullList.defaults.threshold = 200;</code></pre>
+<p>可设置的选项参考：</p>
+<p class="see"><strong>@see <a href="#$.fn.pullList">$.fn.pullList</a></strong> </p><hr>
+<h2 id="initPullList">@fn initPullList(container, opt)</h2>
+<p>等价于</p>
+<pre><code>$(container).pullList(opt);</code></pre>
+<p class="see"><strong>@see <a href="#$.fn.pullList">$.fn.pullList</a></strong> </p><hr>
+<div style="text-align:center">Generated by jdcloud-gendoc</div>
+</html>

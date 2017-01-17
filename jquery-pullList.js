@@ -1,8 +1,6 @@
 /**
 @module jquery-pullList
 
-版本：1.0
-
 为支持分页的列表添加下拉刷新和上拉加载功能。
 
 假设后端支持分页，取某列表接口的原型如下：
@@ -20,7 +18,7 @@
 
 下面举例说明用法，详细可参考 exmaple/index.html 中的例子。
 
-## 示例
+## 下拉列表示例
 
 例：页面元素如下：
 
@@ -87,7 +85,7 @@
 	};
 	$(".bd").pullList(pullListOpt);
 
-## 使用autoload示例
+## autoload事件示例（自动上拉加载）
 
 @key example-autoload
 
@@ -100,6 +98,33 @@ autoload事件可用于滚动到底自动加载，不支持下拉刷新。接上
 
 一般用于简易分页加载场景。
 
+## 定制提示信息
+
+可设置CSS类mui-pullPrompt来定制提示信息的显示格式，如
+
+	.mui-pullPrompt {
+		background-color: yellow;
+	}
+
+可设置CSS类mui-pullHint来指定hint显示的位置，默认是在容器的顶部。
+
+	<div>
+		<div class="bd"> <!-- pullList容器 -->
+			<p class="mui-pullHint">hello</p>  <!-- 如果未指定mui-pullHint，默认提示信息是显示容器顶部，即这行之上; 指定后，提示信息显示在该对象后面 -->
+			<div class="p-list"></div>
+		</div>
+	</div>
+
+可设置选项prefix来修改这些类名，如
+
+	$.fn.pullList.defaults.prefix = "jd";
+
+则CSS类名变为：`jd-pullPrompt`, `jd-pullHint`.
+
+如果要修改提示信息，可提供回调函数 onHintText;
+如果要定制动画效果，可提供回调函数 onHint.
+
+@see $.fn.pullList
 */
 /*
 测试用例
@@ -172,7 +197,6 @@ $.event.special["autoload"] = {
 /**
 @fn $.fn.pullList(opt?)
 @fn $.fn.pullList(method, param1, ...)
-@alias initPullList(container, opt)
 
 初始化pullList，或调用pullList的方法。
 
@@ -185,9 +209,18 @@ $.event.special["autoload"] = {
 
 @param opt.autoLoadMore?=true 当滑动到页面下方时（距离底部$.fn.pullList.defaults.TRIGGER_AUTOLOAD=30px以内）自动加载更多项目。
 
-@param threshold?=180 像素值。
+@param opt.threshold?=180 像素值。
 
 手指最少下划或上划这些像素后才会触发实际加载动作。
+
+@param opt.TRIGGER_AUTOLOAD?=30 距离滚动到底的像素值，进入此范围触发自动加载。
+
+@param opt.prefix?="mui"  类名前缀
+
+影响以下名称：
+
+- CSS类`mui-pullPrompt` 下拉刷新/上拉加载提示块
+- CSS类`mui-pullHint` 指定下拉提示显示位置
 
 @param opt.onHint function(ac, dy, threshold)
 
@@ -269,6 +302,10 @@ function scrollToBottom(o)
 /**
 @fn initPullList(container, opt)
 
+等价于
+
+	$(container).pullList(opt);
+
 @see $.fn.pullList
 */
 window.initPullList = initPullList;
@@ -311,7 +348,9 @@ function initPullList(container, opt)
 	{
 		var msg = null;
 		if (jo_ == null) {
-			jo_ = $("<div class='mui-pullPrompt'></div>");
+			// mui-pullPrompt
+			var pullPromptCls = m_defaults.prefix + "-pullPrompt";
+			jo_ = $("<div class='" + pullPromptCls + "'></div>");
 		}
 
 		var uptoThreshold = dy >= threshold;
@@ -336,7 +375,9 @@ function initPullList(container, opt)
 		jo_.height(height).css("lineHeight", height + "px");
 			
 		if (ac == "D") {
-			var c = cont_.getElementsByClassName("mui-pullHint")[0];
+			// mui-pullHint
+			var pullHintCls = m_defaults.prefix + "-pullHint";
+			var c = cont_.getElementsByClassName(pullHintCls)[0];
 			if (c)
 				jo_.appendTo(c);
 			else
